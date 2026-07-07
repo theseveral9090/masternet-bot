@@ -50,6 +50,10 @@ class AccountGenerator:
                     await self.proxy_mgr.mark_bad(proxy_url)
                     continue
 
+                if check_data.get("rate_limited"):
+                    await self.proxy_mgr.mark_bad(proxy_url)
+                    continue
+
                 if not check_data.get("success"):
                     continue
 

@@ -1,4 +1,6 @@
-BOT_TOKEN = "8623078956:AAGnR94NKH1NbrY9RHOCgWYf7kpdK5-XX_g"
+import os
+
+BOT_TOKEN = os.environ.get("BOT_TOKEN") or "8623078956:AAGnR94NKH1NbrY9RHOCgWYf7kpdK5-XX_g"
 
 TARGET_URL = "https://masternet.store/teste/"
 API_URL = "https://masternet.store/teste/processar_teste.php"

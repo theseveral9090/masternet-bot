@@ -2,23 +2,34 @@ import asyncio
 import aiohttp
 import random
 import re
+import time
 from config import PROXY_SOURCES, PROXY_TEST_TIMEOUT, PROXY_POOL_MIN, PROXY_REFRESH_INTERVAL
+
+BAN_CLEAR_INTERVAL = 86400
 
 class ProxyManager:
     def __init__(self):
         self.working_proxies = []
         self.banned = set()
         self._lock = asyncio.Lock()
-        self._testing = False
         self._pool_ready = asyncio.Event()
+        self._last_ban_clear = 0
 
     async def start(self):
         asyncio.create_task(self._maintain_pool())
+
+    def _maybe_clear_banned(self):
+        now = time.time()
+        if now - self._last_ban_clear > BAN_CLEAR_INTERVAL:
+            self.banned.clear()
+            self._last_ban_clear = now
+            print(f"[ProxyManager] Banned set cleared ({len(self.banned)} entries)")
 
     async def _maintain_pool(self):
         while True:
             self._testing = True
             try:
+                self._maybe_clear_banned()
                 await self._fetch_and_test()
             except Exception as e:
                 print(f"[ProxyManager] Error: {e}")
@@ -58,8 +69,10 @@ class ProxyManager:
 
         tasks = []
         seen = set()
+        async with self._lock:
+            banned = self.banned.copy()
         for proto, addr in raw:
-            if addr not in seen and addr not in self.banned:
+            if addr not in seen and addr not in banned:
                 seen.add(addr)
                 tasks.append(test_one(proto, addr))
 
@@ -86,8 +99,10 @@ class ProxyManager:
                                 if ":" in clean and len(clean.split(":")) == 2:
                                     all_proxies.append(("socks5", clean))
                                     all_proxies.append(("http", clean))
-                except Exception:
-                    pass
+                        else:
+                            print(f"[ProxyManager] Fonte {url[:50]}... retornou {resp.status}")
+                except Exception as e:
+                    print(f"[ProxyManager] Erro ao buscar {url[:50]}...: {e}")
         return list(set(all_proxies))
 
     async def _test(self, proto, addr):
