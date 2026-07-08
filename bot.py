@@ -2,6 +2,7 @@ import asyncio
 import json
 import os
 import logging
+from aiohttp import web
 
 from telegram import Update, InlineKeyboardButton, CopyTextButton, InlineKeyboardMarkup
 from telegram.ext import Application, CommandHandler, ContextTypes
